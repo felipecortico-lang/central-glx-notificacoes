@@ -26,7 +26,7 @@ const db = admin.firestore();
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
 async function sendPushTo(notifications) {
-  if (!notifications.length) return;
+  if (!notifications.length) return 0;
   const uniqueEmails = [...new Set(notifications.map((n) => n.email))];
   const tokenDocs = await Promise.all(
       uniqueEmails.map((email) => db.collection("tokens").doc(email).get()),
@@ -36,6 +36,7 @@ async function sendPushTo(notifications) {
     if (doc.exists) tokenByEmail[doc.id] = doc.data().token;
   });
 
+  let sentCount = 0;
   for (const n of notifications) {
     const token = tokenByEmail[n.email];
     if (!token) {
@@ -52,10 +53,12 @@ async function sendPushTo(notifications) {
         },
       });
       console.log(`Push enviado para ${n.email}: ${n.title}`);
+      sentCount++;
     } catch (err) {
       console.warn(`Falha ao enviar push para ${n.email}:`, err.message);
     }
   }
+  return sentCount;
 }
 
 async function main() {
@@ -117,11 +120,11 @@ async function main() {
     return ev;
   });
 
-  await sendPushTo(notifications);
+  const sentCount = await sendPushTo(notifications);
 
   if (changed) {
     await ref.set({events: updatedEvents});
-    console.log(`Concluído: ${notifications.length} notificação(ões) enviada(s).`);
+    console.log(`Concluído: ${sentCount} de ${notifications.length} notificação(ões) efetivamente enviada(s).`);
   } else {
     console.log("Concluído: nada pendente pra notificar.");
   }
