@@ -1,0 +1,11 @@
+{
+  "name": "central-glx-notification-worker",
+  "private": true,
+  "description": "Verifica a agenda compartilhada da Central GLX e envia notificações push (FCM) sem depender do plano Blaze do Firebase.",
+  "dependencies": {
+    "firebase-admin": "^12.5.0"
+  },
+  "scripts": {
+    "start": "node send-notifications.js"
+  }
+}
