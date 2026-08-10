@@ -25,6 +25,15 @@ const db = admin.firestore();
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
+// Repositório é público (necessário pros minutos do GitHub Actions serem
+// gratuitos), então os logs também são públicos. Nunca logar e-mail completo
+// ou título de reunião.
+function maskEmail(email) {
+  const [user, domain] = String(email).split("@");
+  if (!domain) return "***";
+  return `${user.charAt(0)}***@${domain}`;
+}
+
 async function sendPushTo(notifications) {
   if (!notifications.length) return 0;
   const uniqueEmails = [...new Set(notifications.map((n) => n.email))];
@@ -40,7 +49,7 @@ async function sendPushTo(notifications) {
   for (const n of notifications) {
     const token = tokenByEmail[n.email];
     if (!token) {
-      console.log(`Sem token salvo para ${n.email}, pulando.`);
+      console.log(`Sem token salvo para ${maskEmail(n.email)}, pulando.`);
       continue;
     }
     try {
@@ -52,10 +61,10 @@ async function sendPushTo(notifications) {
           fcmOptions: {link: "/"},
         },
       });
-      console.log(`Push enviado para ${n.email}: ${n.title}`);
+      console.log(`Push enviado para ${maskEmail(n.email)}.`);
       sentCount++;
     } catch (err) {
-      console.warn(`Falha ao enviar push para ${n.email}:`, err.message);
+      console.warn(`Falha ao enviar push para ${maskEmail(n.email)}:`, err.message);
     }
   }
   return sentCount;

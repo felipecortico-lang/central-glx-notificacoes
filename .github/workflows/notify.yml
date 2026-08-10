@@ -5,9 +5,16 @@ on:
     - cron: "*/5 * * * *"
   workflow_dispatch: {}
 
+# Evita duas execuções simultâneas escrevendo no mesmo documento do Firestore
+# caso uma rodada atrase e se sobreponha à próxima.
+concurrency:
+  group: notify-agenda
+  cancel-in-progress: false
+
 jobs:
   notify:
     runs-on: ubuntu-latest
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v4
 
@@ -17,6 +24,15 @@ jobs:
 
       - run: npm install
 
-      - run: node send-notifications.js
+      # O GitHub Actions não agenda com menos de 5 minutos entre execuções,
+      # então cada execução fica verificando a cada 30s por ~4,5 minutos,
+      # cobrindo o intervalo até o próximo disparo agendado.
+      - name: Verificar notificações a cada 30 segundos
+        run: |
+          END=$((SECONDS + 270))
+          while [ $SECONDS -lt $END ]; do
+            node send-notifications.js
+            sleep 30
+          done
         env:
           FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
