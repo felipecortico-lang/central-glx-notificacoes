@@ -70,6 +70,10 @@ async function main() {
   }
 
   const events = snap.data().events || [];
+  console.log("DEBUG eventos:", JSON.stringify(events.map((e) => ({
+    title: e.title, date: e.date, time: e.time, attendees: e.attendees,
+    reminderAt: e.reminderAt, notifiedAssignment: e.notifiedAssignment, remindersSent: e.remindersSent,
+  })), null, 2));
   const now = Date.now();
   const notifications = [];
   let changed = false;
