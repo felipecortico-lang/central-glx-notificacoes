@@ -79,11 +79,6 @@ async function main() {
   }
 
   const events = snap.data().events || [];
-  console.log("DEBUG horarios:", JSON.stringify(events.map((e) => ({
-    title: e.title ? e.title.slice(0, 3) + "***" : "", date: e.date, time: e.time,
-    reminderAt: e.reminderAt, remindersSent: (e.remindersSent || []).length,
-  })), null, 2));
-  console.log("DEBUG agora (UTC):", new Date().toISOString());
   const now = Date.now();
   const notifications = [];
   let changed = false;
