@@ -36,35 +36,42 @@ function maskEmail(email) {
 
 async function sendPushTo(notifications) {
   if (!notifications.length) return 0;
+  // Cada pessoa pode ter vários dispositivos (celular, computador...)
+  // registrados em tokens/{email}/devices/{token}. Envia pra todos.
   const uniqueEmails = [...new Set(notifications.map((n) => n.email))];
-  const tokenDocs = await Promise.all(
-      uniqueEmails.map((email) => db.collection("tokens").doc(email).get()),
+  const deviceSnapshots = await Promise.all(
+      uniqueEmails.map((email) => db.collection("tokens").doc(email).collection("devices").get()),
   );
-  const tokenByEmail = {};
-  tokenDocs.forEach((doc) => {
-    if (doc.exists) tokenByEmail[doc.id] = doc.data().token;
+  const tokensByEmail = {};
+  uniqueEmails.forEach((email, i) => {
+    tokensByEmail[email] = deviceSnapshots[i].docs.map((d) => d.id);
   });
 
   let sentCount = 0;
   for (const n of notifications) {
-    const token = tokenByEmail[n.email];
-    if (!token) {
+    const tokens = tokensByEmail[n.email] || [];
+    if (!tokens.length) {
       console.log(`Sem token salvo para ${maskEmail(n.email)}, pulando.`);
       continue;
     }
-    try {
-      await admin.messaging().send({
-        token,
-        notification: {title: n.title, body: n.body},
-        webpush: {
-          notification: {icon: "/icons/icon-192.png"},
-          fcmOptions: {link: "/"},
-        },
-      });
-      console.log(`Push enviado para ${maskEmail(n.email)}.`);
-      sentCount++;
-    } catch (err) {
-      console.warn(`Falha ao enviar push para ${maskEmail(n.email)}:`, err.message);
+    for (const token of tokens) {
+      try {
+        await admin.messaging().send({
+          token,
+          notification: {title: n.title, body: n.body},
+          webpush: {
+            notification: {icon: "/icons/icon-192.png"},
+            fcmOptions: {link: "/"},
+          },
+        });
+        console.log(`Push enviado para ${maskEmail(n.email)}.`);
+        sentCount++;
+      } catch (err) {
+        console.warn(`Falha ao enviar push para ${maskEmail(n.email)}:`, err.message);
+        if (err.code === "messaging/registration-token-not-registered") {
+          await db.collection("tokens").doc(n.email).collection("devices").doc(token).delete().catch(() => {});
+        }
+      }
     }
   }
   return sentCount;
