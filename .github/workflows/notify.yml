@@ -1,8 +1,10 @@
 name: Enviar notificações da agenda
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
+  # O agendamento nativo do GitHub ("schedule") é "melhor esforço" e pode
+  # atrasar dezenas de minutos em repositórios com pouca atividade. Por isso
+  # o disparo confiável vem de fora, via cron-job.org chamando a API
+  # workflow_dispatch a cada poucos minutos. Veja README.md.
   workflow_dispatch: {}
 
 # Evita duas execuções simultâneas escrevendo no mesmo documento do Firestore
