@@ -85,7 +85,11 @@ async function main() {
 
   const updatedEvents = events.map((original) => {
     let ev = original;
-    const eventMoment = new Date(`${ev.date}T${ev.time}`).getTime();
+    // ev.reminderAt (quando existe) já vem em UTC (com "Z"), gravado pelo
+    // app. ev.date/ev.time são "ingênuos" (sem fuso) e representam horário
+    // de Brasília (UTC-3), então precisam do offset explícito aqui —
+    // senão o runner do GitHub Actions (que roda em UTC) interpreta errado.
+    const eventMoment = new Date(`${ev.date}T${ev.time}:00-03:00`).getTime();
     const eventTooOld = !isNaN(eventMoment) && (now - eventMoment > ONE_DAY_MS);
 
     // (a) Notificação imediata de nova convocação
@@ -108,7 +112,7 @@ async function main() {
     }
 
     // (b) Lembrete no horário customizado (ou horário do próprio evento)
-    const momentStr = ev.reminderAt || `${ev.date}T${ev.time}`;
+    const momentStr = ev.reminderAt || `${ev.date}T${ev.time}:00-03:00`;
     const moment = new Date(momentStr).getTime();
     if (!isNaN(moment) && moment <= now && now - moment < ONE_DAY_MS) {
       const remindersSent = ev.remindersSent || [];
