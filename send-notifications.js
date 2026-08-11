@@ -71,18 +71,6 @@ async function sendPushTo(notifications) {
 }
 
 async function main() {
-  // DEBUG temporário: checa se existem tokens salvos pra cada e-mail da equipe
-  const teamEmails = [
-    "gabriel@glxengenharia.com.br",
-    "lukas@glxengenharia.com.br",
-    "matheus@glxengenharia.com.br",
-    "felipe@glxengenharia.com.br",
-  ];
-  for (const email of teamEmails) {
-    const doc = await db.collection("tokens").doc(email).get();
-    console.log(`DEBUG token ${maskEmail(email)}: ${doc.exists ? "EXISTE" : "NAO EXISTE"}`);
-  }
-
   const ref = db.collection("shared").doc("agenda");
   const snap = await ref.get();
   if (!snap.exists) {
